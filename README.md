@@ -23,6 +23,7 @@ This script automates the process of joining an Ubuntu Server to an Active Direc
 - Administrator username (AdminUser)
 - Administrator password
 - Active Directory domain name
+- Verify the DNS resolution by providing the DNS server IP address. If DNS resolution fails, you will be prompted to enter the DNS server IP.
 
 6. The script will install the required packages, discover the domain, join the domain, configure SSSD, restart the service, add the user to the sudoers file, and verify the domain join.
 
