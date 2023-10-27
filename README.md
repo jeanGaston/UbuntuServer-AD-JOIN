@@ -28,6 +28,7 @@ This script automates the process of joining an Ubuntu Server to an Active Direc
 6. The script will install the required packages, discover the domain, join the domain, configure SSSD, restart the service, add the user to the sudoers file, and verify the domain join.
 
 7. If the script completes successfully, your server will be joined to the Active Directory domain.
+8. You might need to reboot for the authentication with AD credentials to work
 
 ## Disclaimer
 
