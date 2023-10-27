@@ -6,6 +6,19 @@ read -s -p "Administrator password: " admin_password
 echo  # To move to the next line
 read -p "Active Directory domain name: " domain_name
 
+# Prompt for DNS server IP and verify DNS resolution
+while true; do
+    read -p "DNS server IP: " dns_server
+    if nslookup $domain_name $dns_server; then
+        break
+    else
+        echo "DNS resolution failed. Please enter a valid DNS server IP."
+    fi
+done
+
+# Change the DNS server settings in /etc/resolv.conf
+echo "nameserver $dns_server" | sudo tee /etc/resolv.conf
+
 # Install the necessary packages
 apt -y install realmd sssd sssd-tools libnss-sss libpam-sss adcli samba-common-bin oddjob oddjob-mkhomedir packagekit
 
