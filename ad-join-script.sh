@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Enable verbose output
-set -x
-
 # Prompt the user for the hostname
 read -p "Enter the hostname for the server: " hostname
 echo
@@ -44,7 +41,7 @@ realm discover $domain_name
 
 # Join the domain using the provided information
 echo "Joining the domain..."
-echo $admin_password | realm join -U $admin_user $domain_name --computer-ou=OU=Computers,DC=example,DC=com
+echo $admin_password | realm join -U $admin_user $domain_name
 
 # Modify the sssd.conf configuration
 echo "Modifying sssd.conf..."
