@@ -20,6 +20,7 @@ This script automates the process of joining an Ubuntu Server to an Active Direc
 
 
 5. Follow the prompts to provide the necessary information:
+- Hostname without domain
 - Administrator username (AdminUser)
 - Administrator password
 - Active Directory domain name
