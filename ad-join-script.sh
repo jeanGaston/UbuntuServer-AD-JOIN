@@ -9,6 +9,7 @@ read -p "Administrator username (AdminUser): " admin_user
 read -s -p "Administrator password: " admin_password
 echo  # To move to the next line
 read -p "Active Directory domain name: " domain_name
+read -p "Active Directory group for sudo access: " ad_group
 
 # Prompt for DNS server IP and verify DNS resolution
 while true; do
@@ -54,6 +55,8 @@ systemctl restart sssd
 # Add the user to the sudoers file
 echo "Adding the user to the sudoers file..."
 echo "$admin_user ALL=(ALL:ALL) ALL" | sudo tee -a /etc/sudoers
+echo "Adding the group to the sudoers file..."
+echo "%$ad_group ALL=(ALL:ALL) ALL" | sudo tee -a /etc/sudoers
 
 # Verify successful domain join by looking up the user
 echo "Verifying domain join..."
