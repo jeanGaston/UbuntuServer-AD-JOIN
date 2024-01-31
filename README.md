@@ -8,25 +8,27 @@ This script automates the process of joining an Ubuntu Server to an Active Direc
 
 ## Usage
 
-1. Clone or download this repository to your Ubuntu Server.
+1. Clone or download this repository to your Ubuntu Server
+```git clone https://github.com/jeanGaston/UbuntuServer-AD-JOIN```
 
-2. Open a terminal and navigate to the directory containing the script.
+3. Open a terminal and navigate to the directory containing the script.
 
-3. Make the script executable:
+4. Make the script executable:
 ```chmod +x ad-join-script.sh```
 
-4. Run the script:
+5. Run the script:
 ```./ad-join-script.sh```
 
 
-5. Follow the prompts to provide the necessary information:
+6. Follow the prompts to provide the necessary information:
 - Hostname without domain
-- Administrator username (AdminUser)
-- Administrator password
+- AD Administrator username (AdminUser)
+- AD Administrator password
 - Active Directory domain name
+- AD Group to add to the sudoers file
 - Verify the DNS resolution by providing the DNS server IP address. If DNS resolution fails, you will be prompted to enter the DNS server IP.
 
-6. The script will install the required packages, discover the domain, join the domain, configure SSSD, restart the service, add the user to the sudoers file, and verify the domain join.
+6. The script will install the required packages, discover the domain, join the domain, configure SSSD, restart the service, add the user and group to the sudoers file, and verify the domain join.
 
 7. If the script completes successfully, your server will be joined to the Active Directory domain.
 8. You might need to reboot for the authentication with AD credentials to work
