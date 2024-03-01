@@ -8,7 +8,7 @@ This script automates the process of joining an Ubuntu Server to an Active Direc
 
 ## Usage
 
-1. Clone or download this repository to your Ubuntu Server:
+1. Clone or download this repository to your Ubuntu Server:  
 ```git clone https://github.com/jeanGaston/UbuntuServer-AD-JOIN```
 
 3. Open a terminal and navigate to the directory containing the script.
