@@ -42,7 +42,7 @@ realm discover $domain_name
 
 # Join the domain using the provided information
 echo "Joining the domain and registering DNS..."
-echo $admin_password | realm join --user=$admin_user --computer-ou=OU=Computers,DC=$domain_name --os-name=AlmaLinux --os-version=8 $domain_name
+echo $admin_password | realm join --user=$admin_user $domain_name
 
 
 # Modify the sssd.conf configuration
