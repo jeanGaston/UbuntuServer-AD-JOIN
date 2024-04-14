@@ -54,6 +54,10 @@ dyndns_update_ptr = true
 dyndns_ttl = 3600
 EOF
 
+# Modify the sssd.conf configuration
+echo "Modifying sssd.conf..."
+sed -i 's/use_fully_qualified_names = True/use_fully_qualified_names = False/g' /etc/sssd/sssd.conf
+
 # Restart the SSSD service
 echo "Restarting the SSSD service..."
 systemctl restart sssd
