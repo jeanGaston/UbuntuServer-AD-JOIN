@@ -19,7 +19,9 @@ while true; do
         echo "DNS resolution failed. Please enter a valid DNS server IP."
     fi
 done
-
+# Install the necessary packages with a loading bar
+echo "Installing required packages..."
+apt -y install realmd sssd sssd-tools libnss-sss libpam-sss adcli samba-common-bin oddjob oddjob-mkhomedir packagekit
 # Display hostname change information
 echo "Changing the hostname to: $hostname.$domain_name"
 
