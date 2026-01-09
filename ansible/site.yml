@@ -1,0 +1,9 @@
+---
+- name: Join Ubuntu hosts to Active Directory
+  hosts: all
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: ad_join
+

@@ -1,0 +1,26 @@
+---
+ad_join_script_src: "{{ playbook_dir }}/../ad-join-script.sh"
+ad_join_script_dest: /usr/local/sbin/ubuntu-ad-join.sh
+
+ad_join_install_packages:
+  - realmd
+  - sssd
+  - sssd-tools
+  - libnss-sss
+  - libpam-sss
+  - adcli
+  - samba-common-bin
+  - oddjob
+  - oddjob-mkhomedir
+  - packagekit
+
+ad_join_hostname: ""
+ad_join_admin_user: ""
+ad_join_admin_password: ""
+ad_join_domain_name: ""
+ad_join_ad_group: ""
+ad_join_dns_server: ""
+ad_join_dns_servers: []
+
+ad_join_force: false
+ad_join_run: true

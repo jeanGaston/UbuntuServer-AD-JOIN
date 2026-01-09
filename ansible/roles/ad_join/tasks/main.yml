@@ -1,0 +1,70 @@
+---
+- name: Validate required variables
+  ansible.builtin.assert:
+    that:
+      - ad_join_hostname | length > 0
+      - ad_join_domain_name | length > 0
+      - ad_join_admin_user | length > 0
+      - ad_join_admin_password | length > 0
+      - ad_join_ad_group | length > 0
+    fail_msg: >-
+      Missing required variables. Pass them as extra vars (Semaphore) or via inventory/group vars.
+
+- name: Normalize DNS servers list
+  ansible.builtin.set_fact:
+    ad_join_dns_servers_effective: >-
+      {{
+        (
+          ad_join_dns_servers.split(',') | map('trim') | reject('equalto', '') | list
+        )
+        if (ad_join_dns_servers is string)
+        else (ad_join_dns_servers | default([]))
+      }}
+
+- name: Back-compat for single DNS variable
+  ansible.builtin.set_fact:
+    ad_join_dns_servers_effective: "{{ [ad_join_dns_server] }}"
+  when:
+    - ad_join_dns_servers_effective | length == 0
+    - ad_join_dns_server | length > 0
+
+- name: Validate DNS server(s) provided
+  ansible.builtin.assert:
+    that:
+      - ad_join_dns_servers_effective | length > 0
+    fail_msg: >-
+      Missing DNS server(s). Set ad_join_dns_servers (preferred) or ad_join_dns_server.
+
+- name: Install required packages
+  ansible.builtin.apt:
+    name: "{{ ad_join_install_packages }}"
+    state: present
+    update_cache: true
+
+- name: Check current domain join status
+  ansible.builtin.command: realm list
+  register: ad_join_realm_list
+  changed_when: false
+  failed_when: false
+
+- name: Deploy AD join script
+  ansible.builtin.copy:
+    src: "{{ ad_join_script_src }}"
+    dest: "{{ ad_join_script_dest }}"
+    mode: "0750"
+    owner: root
+    group: root
+
+- name: Join domain using script
+  ansible.builtin.command: "{{ ad_join_script_dest }}"
+  environment:
+    ADJOIN_HOSTNAME: "{{ ad_join_hostname }}"
+    ADJOIN_ADMIN_USER: "{{ ad_join_admin_user }}"
+    ADJOIN_ADMIN_PASSWORD: "{{ ad_join_admin_password }}"
+    ADJOIN_DOMAIN_NAME: "{{ ad_join_domain_name }}"
+    ADJOIN_AD_GROUP: "{{ ad_join_ad_group }}"
+    ADJOIN_DNS_SERVERS: "{{ ad_join_dns_servers_effective | join(' ') }}"
+  no_log: true
+  when:
+    - ad_join_run | bool
+    - ad_join_force | bool or (ad_join_realm_list.stdout is not regex_search('realm-name:\\s*' ~ (ad_join_domain_name | regex_escape) ~ '\\b'))

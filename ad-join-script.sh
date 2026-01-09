@@ -1,24 +1,110 @@
 #!/bin/bash
-# Prompt the user for the hostname
-read -p "Enter the hostname for the server: " hostname
-echo
+set -euo pipefail
+
+hostname="${ADJOIN_HOSTNAME:-}"
+admin_user="${ADJOIN_ADMIN_USER:-}"
+admin_password="${ADJOIN_ADMIN_PASSWORD:-}"
+domain_name="${ADJOIN_DOMAIN_NAME:-}"
+ad_group="${ADJOIN_AD_GROUP:-}"
+dns_servers_raw="${ADJOIN_DNS_SERVERS:-${ADJOIN_DNS_SERVER:-}}"
+dns_interface="${ADJOIN_DNS_INTERFACE:-}"
+
+configure_dns() {
+    local domain="$1"
+    shift
+    local -a servers=("$@")
+
+    if command -v systemctl >/dev/null 2>&1 && systemctl is-active --quiet systemd-resolved; then
+        echo "Configuring DNS via systemd-resolved..."
+        sudo mkdir -p /etc/systemd/resolved.conf.d
+        {
+            echo "[Resolve]"
+            echo "DNS=${servers[*]}"
+            echo "Domains=$domain"
+        } | sudo tee /etc/systemd/resolved.conf.d/ad-join.conf >/dev/null
+        sudo systemctl restart systemd-resolved
+        return 0
+    fi
+
+    if command -v resolvectl >/dev/null 2>&1; then
+        local iface="$dns_interface"
+        if [ -z "$iface" ] && command -v ip >/dev/null 2>&1; then
+            iface="$(ip route show default 2>/dev/null | awk '{print $5; exit}')"
+        fi
+        if [ -n "$iface" ]; then
+            echo "Configuring DNS via resolvectl on interface: $iface"
+            sudo resolvectl dns "$iface" "${servers[@]}"
+            sudo resolvectl domain "$iface" "$domain"
+            return 0
+        fi
+    fi
+
+    echo "Configuring DNS via /etc/resolv.conf..."
+    {
+        for server in "${servers[@]}"; do
+            echo "nameserver $server"
+        done
+    } | sudo tee /etc/resolv.conf >/dev/null
+}
+
+if [ -z "$hostname" ]; then
+    read -p "Enter the hostname for the server: " hostname
+    echo
+fi
 
 # Prompt the user for the necessary information
-read -p "Administrator username (AdminUser): " admin_user
-read -s -p "Administrator password: " admin_password
-echo  # To move to the next line
-read -p "Active Directory domain name: " domain_name
-read -p "Active Directory group for sudo access: " ad_group
+if [ -z "$admin_user" ]; then
+    read -p "Administrator username (AdminUser): " admin_user
+fi
+if [ -z "$admin_password" ]; then
+    read -s -p "Administrator password: " admin_password
+    echo  # To move to the next line
+fi
+if [ -z "$domain_name" ]; then
+    read -p "Active Directory domain name: " domain_name
+fi
+if [ -z "$ad_group" ]; then
+    read -p "Active Directory group for sudo access: " ad_group
+fi
 
-# Prompt for DNS server IP and verify DNS resolution
-while true; do
-    read -p "DNS server IP: " dns_server
-    if nslookup $domain_name $dns_server; then
-        break
-    else
-        echo "DNS resolution failed. Please enter a valid DNS server IP."
+# Prompt for DNS server IP(s) and verify DNS resolution
+if [ -z "$dns_servers_raw" ]; then
+    while true; do
+        read -p "DNS server IP(s) (comma or space separated): " dns_servers_raw
+        dns_servers_raw="${dns_servers_raw//,/ }"
+        read -r -a dns_servers <<<"$dns_servers_raw"
+
+        dns_ok=false
+        for server in "${dns_servers[@]}"; do
+            if nslookup "$domain_name" "$server" >/dev/null 2>&1; then
+                dns_ok=true
+                break
+            fi
+        done
+
+        if [ "$dns_ok" = true ]; then
+            break
+        fi
+        echo "DNS resolution failed using provided server(s). Please try again."
+    done
+else
+    dns_servers_raw="${dns_servers_raw//,/ }"
+    read -r -a dns_servers <<<"$dns_servers_raw"
+
+    dns_ok=false
+    for server in "${dns_servers[@]}"; do
+        if nslookup "$domain_name" "$server" >/dev/null 2>&1; then
+            dns_ok=true
+            break
+        fi
+    done
+
+    if [ "$dns_ok" != true ]; then
+        echo "DNS resolution failed using provided server(s): ${dns_servers[*]}" >&2
+        exit 1
     fi
-done
+fi
+
 # Install the necessary packages with a loading bar
 echo "Installing required packages..."
 apt -y install realmd sssd sssd-tools libnss-sss libpam-sss adcli samba-common-bin oddjob oddjob-mkhomedir packagekit
@@ -26,20 +112,16 @@ apt -y install realmd sssd sssd-tools libnss-sss libpam-sss adcli samba-common-b
 echo "Changing the hostname to: $hostname.$domain_name"
 
 # Change the hostname
-hostnamectl set-hostname $hostname
+hostnamectl set-hostname "$hostname.$domain_name"
 echo "$hostname.$domain_name" | sudo tee /etc/hostname
 
-# Change the DNS server settings in /etc/resolv.conf
-echo "Changing DNS server to: $dns_server"
-echo "nameserver $dns_server" | sudo tee /etc/resolv.conf
-
-# Install the necessary packages with a loading bar
-echo "Installing required packages..."
-apt -y install realmd sssd sssd-tools libnss-sss libpam-sss adcli samba-common-bin oddjob oddjob-mkhomedir packagekit & loading_bar
+# Change DNS settings
+echo "Setting DNS server(s) to: ${dns_servers[*]}"
+configure_dns "$domain_name" "${dns_servers[@]}"
 
 # Discover the domain and join, registering DNS
 echo "Joining the domain and registering DNS..."
-echo $admin_password | realm join --user=$admin_user $domain_name
+printf '%s\n' "$admin_password" | realm join --user="$admin_user" "$domain_name"
 
 # Modify the sssd.conf configuration to enable dynamic DNS updates
 echo "Configuring dynamic DNS updates..."
