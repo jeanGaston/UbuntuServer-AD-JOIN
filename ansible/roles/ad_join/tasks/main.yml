@@ -67,4 +67,4 @@
   no_log: false
   when:
     - ad_join_run | bool
-    - ad_join_force | bool or (ad_join_realm_list.stdout is not regex_search('realm-name:\\s*' ~ (ad_join_domain_name | regex_escape) ~ '\\b'))
+    - ad_join_force | bool or (ad_join_realm_list.stdout | regex_search('realm-name:\\s*' ~ (ad_join_domain_name | regex_escape) ~ '\\b') is none)
