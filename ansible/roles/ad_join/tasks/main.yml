@@ -64,7 +64,7 @@
     ADJOIN_DOMAIN_NAME: "{{ ad_join_domain_name }}"
     ADJOIN_AD_GROUP: "{{ ad_join_ad_group }}"
     ADJOIN_DNS_SERVERS: "{{ ad_join_dns_servers_effective | join(' ') }}"
-  no_log: true
+  no_log: false
   when:
     - ad_join_run | bool
     - ad_join_force | bool or (ad_join_realm_list.stdout is not regex_search('realm-name:\\s*' ~ (ad_join_domain_name | regex_escape) ~ '\\b'))
